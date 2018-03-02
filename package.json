@@ -1,5 +1,5 @@
 {
-  "name": "gtoken",
+  "name": "gtoken-china",
   "version": "2.1.0",
   "description": "Node.js Google Authentication Service Account Tokens",
   "main": "./build/src/index.js",
@@ -34,10 +34,11 @@
   },
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.18.0",
+    "@types/node-fetch": "^1.6.7",
     "google-p12-pem": "^1.0.0",
     "jws": "^3.1.4",
     "mime": "^2.2.0",
+    "node-fetch": "^2.0.0",
     "pify": "^3.0.0"
   },
   "devDependencies": {

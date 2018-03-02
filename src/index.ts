@@ -1,10 +1,11 @@
-import axios from 'axios';
 import * as fs from 'fs';
 import {getPem} from 'google-p12-pem';
 import * as jws from 'jws';
 import * as mime from 'mime';
 import * as pify from 'pify';
 import * as querystring from 'querystring';
+import fetch from 'node-fetch';
+import { Agent } from "https";
 
 const readFile = pify(fs.readFile);
 
@@ -29,6 +30,7 @@ export interface TokenOptions {
   sub?: string;
   scope?: string|string[];
   additionalClaims?: {};
+  agent?: Agent;
 }
 
 class ErrorWithCode extends Error {
@@ -48,6 +50,7 @@ export class GoogleToken {
   rawToken: string|null = null;
   tokenExpires: number|null = null;
   email?: string;
+  agent?: Agent;
   additionalClaims?: {};
 
   /**
@@ -164,7 +167,7 @@ export class GoogleToken {
     if (!this.token) {
       throw new Error('No token to revoke.');
     }
-    return axios.get(GOOGLE_REVOKE_TOKEN_URL + this.token).then(r => {
+    return fetch(GOOGLE_REVOKE_TOKEN_URL + this.token, { agent: this.agent }).then(r => {
       this.configure({
         email: this.iss,
         sub: this.sub,
@@ -188,6 +191,10 @@ export class GoogleToken {
     this.iss = options.email || options.iss;
     this.sub = options.sub;
     this.additionalClaims = options.additionalClaims;
+    
+    if (options.agent) {
+      this.agent = options.agent
+    }
 
     if (typeof options.scope === 'object') {
       this.scope = options.scope.join(' ');
@@ -214,17 +221,20 @@ export class GoogleToken {
         additionalClaims);
     const signedJWT =
         jws.sign({header: {alg: 'RS256'}, payload, secret: this.key});
-    return axios({
-             method: 'post',
-             url: GOOGLE_TOKEN_URL,
-             data: querystring.stringify({
-               grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-               assertion: signedJWT
-             }),
+    return fetch(GOOGLE_TOKEN_URL, {
+      body: querystring.stringify({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: signedJWT
+      }),
+            agent: this.agent,
+             method: 'POST',
              headers: {'Content-Type': 'application/x-www-form-urlencoded'}
            })
         .then(r => {
-          const body = r.data;
+          return r.json()
+        })
+           
+        .then(body=> {
           this.rawToken = body;
           this.token = body.access_token;
           this.expiresAt = (iat + body.expires_in) * 1000;
