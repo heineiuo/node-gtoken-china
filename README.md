@@ -16,22 +16,23 @@ Node.js Google Authentication Service Account Tokens
 
 由于中国国内不能直接访问googleapis服务，所以修改了原来的[node-gtoken](https://github.com/google/node-gtoken)这个包，使之能够通过`https.Agent`代理访问googleapis服务。具体变化如下：
 
-* 删除了axios。虽然axios官方文档上支持使用`axios.defaults[...]`来设置全局属性，但实际使用失败，axios本身bug也很多。
-* 添加 node-fetch 和 @types/node-fetch
+* 删除了`axios`。虽然axios官方文档上声称支持使用`axios.defaults[...]`来设置全局属性，但实际使用失败，`axios`本身bug也很多。
+* 添加 `node-fetch` 和 `@types/node-fetch`
 * 给`GoogleToken`添加`agent`参数
 
 ### 示例：
 
 ```js
 const HttpsProxyAgent = require('https-proxy-agent')
+const { GoogleToken } = require('gtoken-china')
 const agent = new HttpsProxyAgent(process.env.HTTP_PROXY)
 const gtoken = new GoogleToken({
   agent,
-  iss: ISS,
+  iss: ISS, // 需要定义
   scope: [
     'https://www.googleapis.com/auth/firebase.messaging'
   ],
-  key: KEY
+  key: KEY // 需要定义
 })
 ```
 
